@@ -1,0 +1,18 @@
+[Unit]
+Description=Radiation Tests Application
+Requires=fsat2-engine.service
+After=fsat2-engine.service
+
+[Service]
+ExecStart=/usr/bin/rad-tests-app
+Restart=always
+RestartSec=5
+RestartPreventExitStatus=42
+StandardError=journal
+ExecStop=/bin/kill -s SIGTERM $MAINPID
+ExecReload=/bin/kill -s SIGHUP $MAINPID
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target
+

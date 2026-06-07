@@ -1,54 +1,66 @@
 #ifndef DB_HPP_
 #define DB_HPP_
 
+#include <cstdint>
 #include <sqlite3.h>
 
 #include <string>
-#include <utility>
-#include <vector>
+
+namespace db {
+
+struct ActuationEntry {
+    std::string dacName;
+    int channel;
+    double setPoint;
+    int64_t unix_ms;
+};
+
+struct MeasurementEntry {
+    std::string sensorName;
+    int channel;
+    double value;
+    int64_t unix_ms;
+};
 
 class SqliteDb {
- public:
-  SqliteDb(std::string dbPath) : dbPath_{dbPath} {
-    createSqliteDB();
-    applyPragmas();
-    createMeasurementsTable();
-    createRegisteredSensorsTable();
-    createTrackedSensorsTable();
-    prepareInsertMeasurementStmt();
-  }
-  ~SqliteDb() {
-    if (insertMeasurementStmt_) sqlite3_finalize(insertMeasurementStmt_);
-    sqlite3_close(dbHandle_);
-  }
+  public:
+    SqliteDb(std::string dbPath) : dbPath_{dbPath} {
+        createSqliteDB();
+        applyPragmas();
+        createMeasurementsTable();
+        createActuationTable();
+        prepareStmt();
+    }
+    ~SqliteDb() {
+        if (insertMeasurementStmt_)
+            sqlite3_finalize(insertMeasurementStmt_);
+        if (insertActuationStmt_)
+            sqlite3_finalize(insertActuationStmt_);
+        sqlite3_close(dbHandle_);
+    }
 
-  operator bool() const { return dbOpen_; };
+    operator bool() const { return dbOpen_; };
 
-  int createSqliteDB(void);
-  int createMeasurementsTable(void);
-  int createRegisteredSensorsTable(void);
-  int createTrackedSensorsTable(void);
+    int begin(void);
+    int commit(void);
 
-  int begin(void);
-  int commit(void);
+    int addMeasurement(MeasurementEntry &entry);
+    int addActuation(ActuationEntry &entry);
 
-  int addRegisteredSensor(std::string const& name, std::string const& type);
-  int removeRegisteredSensor(std::string const& name);
-  std::vector<std::pair<std::string, std::string>> getRegisteredSensors();
+  private:
+    std::string dbPath_;
+    sqlite3 *dbHandle_;
+    bool dbOpen_{false};
+    sqlite3_stmt *insertMeasurementStmt_{nullptr};
+    sqlite3_stmt *insertActuationStmt_{nullptr};
 
-  int addTrackedSensor(std::string const& name, std::string const& channel);
-  int removeTrackedSensor(std::string const& name, std::string const& channel);
-  int removeTrackedSensorAll(std::string const& name);
-  std::vector<std::pair<std::string, std::string>> getTrackedSensors();
-
- private:
-  std::string dbPath_;
-  sqlite3* dbHandle_;
-  bool dbOpen_{false};
-  sqlite3_stmt* insertMeasurementStmt_{nullptr};
-
-  int prepareInsertMeasurementStmt(void);
-  void applyPragmas(void);
+    int prepareStmt(void);
+    void applyPragmas(void);
+    int createSqliteDB(void);
+    int createMeasurementsTable(void);
+    int createActuationTable(void);
 };
+
+} // namespace db
 
 #endif

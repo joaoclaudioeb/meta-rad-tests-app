@@ -45,3 +45,4 @@ db/
 log/
 *.sqlite3
 *.db
+.wraplock

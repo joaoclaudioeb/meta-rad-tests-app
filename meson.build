@@ -1,10 +1,11 @@
 project(
   'rad-tests-app',
-  'cpp',
-  version: '1.2',
+  ['cpp', 'c'],
+  version: '1.3',
   default_options: [
     'warning_level=3',
     'cpp_std=c++20',
+    'c_std=gnu11',
     'optimization=3',
     'buildtype=release',
   ],
@@ -19,8 +20,12 @@ sqlite3_dep = dependency('sqlite3')
 
 fsatutils = dependency('fsatutils')
 
+libdac81408 = subproject('libdac81408')
+dac81408_dep = libdac81408.get_variable('dac81408_dep')
+
 rta_deps += sqlite3_dep
 rta_deps += fsatutils
+rta_deps += dac81408_dep
 
 subdir('src')
 

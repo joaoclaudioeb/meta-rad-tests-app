@@ -1,7 +1,7 @@
 project(
   'rad-tests-app',
   ['cpp', 'c'],
-  version: '1.3',
+  version: '1.5',
   default_options: [
     'warning_level=3',
     'cpp_std=c++20',

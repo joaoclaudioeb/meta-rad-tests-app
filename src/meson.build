@@ -2,4 +2,6 @@ rta_srcs = files(
   'db.cpp',
   'main.cpp',
   'helpers.cpp',
+  'dac.cpp',
+  'experiment.cpp',
 )

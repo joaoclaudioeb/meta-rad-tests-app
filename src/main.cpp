@@ -45,7 +45,7 @@ int main(void) {
         service->runService();
     }
 
-    auto exp = std::make_unique<ExperimentManager>();
+    auto exp = std::make_unique<ExperimentManager>(DB_PATH);
 
     exp->runExperiment();
 

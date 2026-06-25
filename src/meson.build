@@ -3,5 +3,5 @@ rta_srcs = files(
   'main.cpp',
   'helpers.cpp',
   'dac.cpp',
-  'experiment.cpp',
+  'experiment_manager.cpp',
 )

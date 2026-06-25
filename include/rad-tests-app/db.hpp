@@ -43,6 +43,7 @@ class SqliteDb {
 
     int begin(void);
     int commit(void);
+    int rollback(void);
 
     int addMeasurement(MeasurementEntry &entry);
     int addActuation(ActuationEntry &entry);

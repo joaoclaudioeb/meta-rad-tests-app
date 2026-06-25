@@ -1,10 +1,12 @@
+#include "rad-tests-app/db.hpp"
+#include "rad-tests-app/helpers.hpp"
 #include <cstdlib>
 #include <fsatutils/log/log.hpp>
 #include <rad-tests-app/dac.hpp>
 #include <rad-tests-app/experiment_manager.hpp>
 #include <thread>
 
-ExperimentManager::ExperimentManager() {
+ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
     try {
         dacs_.emplace_back("/dev/spidev1.0", "gpiochip0", 0U,
                            DAC81408_PIN_UNUSED);
@@ -56,7 +58,16 @@ void ExperimentManager::runExperiment() {
         auto next = std::chrono::steady_clock::now();
 
         for (auto &dac : dacs_) {
-            if (dac.setChannelVoltage(0, setPoint) < 0) {
+            if (dac.setChannelVoltage(0, setPoint) == 0) {
+                db::ActuationEntry entry = {
+                    .dacName = dac.spidev(),
+                    .channel = 0,
+                    .setPoint = setPoint,
+                    .unix_ms = getUnixMs(),
+                };
+
+                db_.addActuation(entry);
+            } else {
                 logs::log(ERR,
                           "Failed to set DAC voltage! dac[%s], voltage[%.2f]\n",
                           dac.spidev(), setPoint);

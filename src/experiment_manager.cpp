@@ -1,9 +1,9 @@
-#include "rad-tests-app/db.hpp"
-#include "rad-tests-app/helpers.hpp"
 #include <cstdlib>
 #include <fsatutils/log/log.hpp>
 #include <rad-tests-app/dac.hpp>
+#include <rad-tests-app/db.hpp>
 #include <rad-tests-app/experiment_manager.hpp>
+#include <rad-tests-app/helpers.hpp>
 #include <thread>
 
 ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
@@ -14,6 +14,56 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
         logs::log(ERR, "Exception triggered creating DAC! e: %s\n", e.what());
         exit(1);
     }
+}
+
+int ExperimentManager::runDacChannelSweep(DAC &dac) {
+    std::vector<db::ActuationEntry> dbEntries(dacChannels_);
+
+    currentSetPoint_ += step_;
+
+    if (currentSetPoint_ > maxSetPoint_)
+        currentSetPoint_ = 0.0;
+
+    for (int i = 0; i < dacChannels_ && dac.isChannelEnabled(i); ++i) {
+        int ret = dac.setChannelVoltage(i, currentSetPoint_);
+
+        if (ret > 0)
+            dbEntries[i].unix_ms = getUnixMs();
+        else
+            logs::log(ERR, "Failed to set voltage at channel[%i] on sweep\n",
+                      i);
+    }
+
+    if (db_.begin() < 0)
+        return -1;
+
+    int retval = 0;
+    for (int i = 0; i < dacChannels_; ++i) {
+        if (dbEntries[i].unix_ms != 0) {
+            dbEntries[i].channel = i;
+            dbEntries[i].dacName = dac.spidev();
+            dbEntries[i].setPoint = currentSetPoint_;
+
+            if (db_.addActuation(dbEntries[i]) < 0) {
+                logs::log(
+                    ERR, "Failed to add actuation for channel[%i] to db!\n", i);
+                retval = -1;
+            }
+        } else {
+            logs::log(ERR, "Failed to set voltage for channel[%i]!\n", i);
+            retval = -1;
+        }
+    }
+
+    if (retval == 0) {
+        logs::log(DEBUG, "Commited a channel sweep to DB!\n");
+        db_.commit();
+    } else {
+        logs::log(DEBUG, "Rollbacked a channel sweep to DB!\n");
+        db_.rollback();
+    }
+
+    return retval;
 }
 
 void ExperimentManager::runExperiment() {
@@ -52,33 +102,13 @@ void ExperimentManager::runExperiment() {
         dac.setChannelVoltage(5, 4.9);
     }
 
-    double setPoint = 0.0;
-
     while (true) {
         auto next = std::chrono::steady_clock::now();
 
         for (auto &dac : dacs_) {
-            if (dac.setChannelVoltage(0, setPoint) == 0) {
-                db::ActuationEntry entry = {
-                    .dacName = dac.spidev(),
-                    .channel = 0,
-                    .setPoint = setPoint,
-                    .unix_ms = getUnixMs(),
-                };
-
-                db_.addActuation(entry);
-            } else {
-                logs::log(ERR,
-                          "Failed to set DAC voltage! dac[%s], voltage[%.2f]\n",
-                          dac.spidev(), setPoint);
-            }
+            runDacChannelSweep(dac);
         }
 
-        setPoint += 0.5;
-
-        if (setPoint > 5.0)
-            setPoint = 0.0;
-
-        std::this_thread::sleep_until(next + std::chrono::seconds(5));
+        std::this_thread::sleep_until(next + std::chrono::seconds(1));
     }
 }

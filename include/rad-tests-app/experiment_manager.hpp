@@ -1,6 +1,7 @@
 #ifndef EXPERIMENT_MANAGER_HPP_
 #define EXPERIMENT_MANAGER_HPP_
 
+#include <fsatutils/zmq/service.hpp>
 #include <rad-tests-app/dac.hpp>
 #include <rad-tests-app/db.hpp>
 #include <vector>
@@ -9,6 +10,9 @@ class ExperimentManager {
   public:
     ExperimentManager(std::string dbPath);
     void runExperiment();
+
+    static void commandHandler(void *manager, fsatutils::zmq::Command cmd);
+    static std::vector<fsatutils::zmq::Command> getCommandDescription();
 
   private:
     int runDacChannelSweep(DAC &dac);

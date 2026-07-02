@@ -16,6 +16,26 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
     }
 }
 
+std::vector<fsatutils::zmq::Command>
+ExperimentManager::getCommandDescription() {
+    fsatutils::zmq::Command run;
+    run.cmd = "run";
+
+    return {run};
+}
+
+void ExperimentManager::commandHandler(void *manager,
+                                       fsatutils::zmq::Command cmd) {
+    ExperimentManager *man = static_cast<ExperimentManager *>(manager);
+
+    if (cmd.cmd == "run") {
+        man->run_ = true;
+        logs::log(INFO, "Starting run at %llu...\n", getUnixMs());
+    } else {
+        logs::log(WARN, "Invalid command received!\n");
+    }
+}
+
 int ExperimentManager::runDacChannelSweep(DAC &dac) {
     std::vector<db::ActuationEntry> dbEntries(dacChannels_);
 

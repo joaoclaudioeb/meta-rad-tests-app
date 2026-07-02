@@ -33,6 +33,8 @@ int main(void) {
             static_cast<std::uint8_t>(zmq::MessageProtocol::JSON),
     };
 
+    auto exp = std::make_unique<ExperimentManager>(DB_PATH);
+
     std::unique_ptr<zmq::Service> service;
 
     try {
@@ -41,11 +43,17 @@ int main(void) {
         logs::log(ERR, "Failed to create ZMQ service: [%s]!\n", e.what());
     }
 
+    auto manager_cmds = exp->getCommandDescription();
+
     if (service != nullptr) {
+        for (auto const &cmd : manager_cmds) {
+            service->registerCommand(cmd.cmd, cmd.args,
+                                     &ExperimentManager::commandHandler,
+                                     static_cast<void *>(exp.get()));
+        }
+
         service->runService();
     }
-
-    auto exp = std::make_unique<ExperimentManager>(DB_PATH);
 
     exp->runExperiment();
 

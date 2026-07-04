@@ -148,6 +148,6 @@ void ExperimentManager::runExperiment() {
             runDacChannelSweep(dac);
         }
 
-        std::this_thread::sleep_until(next + sstd::chrono::microseconds(500));
+        std::this_thread::sleep_until(next + std::chrono::microseconds(500));
     }
 }

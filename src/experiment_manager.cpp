@@ -44,10 +44,13 @@ int ExperimentManager::runDacChannelSweep(DAC &dac) {
     if (currentSetPoint_ > maxSetPoint_)
         currentSetPoint_ = 0.0;
 
-    for (int i = 0; i < dacChannels_ && dac.isChannelEnabled(i); ++i) {
+    for (int i = 0; i < dacChannels_; ++i) {
+        if (!dac.isChannelEnabled(i))
+            continue;
+        
         int ret = dac.setChannelVoltage(i, currentSetPoint_);
 
-        if (ret > 0)
+        if (ret == 0)
             dbEntries[i].unix_ms = getUnixMs();
         else
             logs::log(ERR, "Failed to set voltage at channel[%i] on sweep\n",
@@ -59,6 +62,9 @@ int ExperimentManager::runDacChannelSweep(DAC &dac) {
 
     int retval = 0;
     for (int i = 0; i < dacChannels_; ++i) {
+        if (!dac.isChannelEnabled(i))
+            continue;
+
         if (dbEntries[i].unix_ms != 0) {
             dbEntries[i].channel = i;
             dbEntries[i].dacName = dac.spidev();
@@ -91,8 +97,12 @@ void ExperimentManager::runExperiment() {
         dac.setIntReference(DAC81408_REF_ON);
 
         dac.setChannelState(0, true);
+        dac.setChannelState(1, true);
+        dac.setChannelState(2, true);
         dac.setChannelState(3, true);
+        dac.setChannelState(4, true);
         dac.setChannelState(5, true);
+        dac.setChannelState(6, true);
         dac.setChannelState(7, true);
 
         logs::log(INFO, "DAC[%s], Ch[%d]: %d\n", dac.spidev(), 0,
@@ -113,13 +123,22 @@ void ExperimentManager::runExperiment() {
                   dac.isChannelEnabled(7));
 
         dac.setChannelRange(0, DAC81408_RANGE_0_5V);
+        dac.setChannelRange(1, DAC81408_RANGE_0_5V);
+        dac.setChannelRange(2, DAC81408_RANGE_0_5V);
         dac.setChannelRange(3, DAC81408_RANGE_0_5V);
+        dac.setChannelRange(4, DAC81408_RANGE_0_5V);
         dac.setChannelRange(5, DAC81408_RANGE_0_5V);
+        dac.setChannelRange(6, DAC81408_RANGE_0_5V);
         dac.setChannelRange(7, DAC81408_RANGE_0_5V);
 
-        dac.setChannelVoltage(7, 1.2);
-        dac.setChannelVoltage(3, 3.7);
-        dac.setChannelVoltage(5, 4.9);
+        dac.setChannelVoltage(0, 0.0);
+        dac.setChannelVoltage(1, 0.0);
+        dac.setChannelVoltage(2, 0.0);
+        dac.setChannelVoltage(3, 0.0);
+        dac.setChannelVoltage(4, 0.0);
+        dac.setChannelVoltage(5, 0.0);
+        dac.setChannelVoltage(6, 0.0);
+        dac.setChannelVoltage(7, 0.0);
     }
 
     while (true) {

@@ -18,7 +18,7 @@ class ExperimentManager {
     int runDacChannelSweep(DAC &dac);
     std::vector<DAC> dacs_;
     db::SqliteDb db_;
-    double step_{0.10};
+    double step_{0.050};
     double currentSetPoint_{0.0};
     double maxSetPoint_{5.0};
     int dacChannels_{8};

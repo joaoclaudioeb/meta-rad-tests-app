@@ -68,8 +68,7 @@ std::optional<double> ADC::readSysfsDouble(const std::string &path) const {
  */
 std::string ADC::discoverIioPath(const std::string &spiCs) {
     if (!fs::exists(IIO_DEVICES_PATH))
-        throw_runtime_error("IIO devices path does not exist: %s",
-                            IIO_DEVICES_PATH);
+        throw_runtime_error("IIO devices path does not exist: %s");
 
     for (const auto &entry : fs::directory_iterator(IIO_DEVICES_PATH)) {
         std::string dirName = entry.path().filename().string();
@@ -108,8 +107,7 @@ std::string ADC::discoverIioPath(const std::string &spiCs) {
         }
     }
 
-    throw_runtime_error("ADC: no ADS1256 IIO device found for SPI CS %s",
-                        spiCs.c_str());
+    throw_runtime_error("ADC: no ADS1256 IIO device found for SPI CS %s");
     return {}; /* unreachable */
 }
 

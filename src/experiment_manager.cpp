@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <fsatutils/log/log.hpp>
+#include <rad-tests-app/adc.hpp>
 #include <rad-tests-app/dac.hpp>
 #include <rad-tests-app/db.hpp>
 #include <rad-tests-app/experiment_manager.hpp>
@@ -12,6 +13,33 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
                            DAC81408_PIN_UNUSED);
     } catch (std::exception &e) {
         logs::log(ERR, "Exception triggered creating DAC! e: %s\n", e.what());
+        exit(1);
+    }
+
+    /* ADS1256 #1 (CS 1) — voltage, single-ended, all 8 channels */
+    try {
+        adcs_.emplace_back("1", "ads1256-voltage");
+    } catch (std::exception &e) {
+        logs::log(ERR, "Exception creating ADC voltage (CS1)! e: %s\n",
+                  e.what());
+        exit(1);
+    }
+
+    /* ADS1256 #2 (CS 2) — current, differential, 4 pairs */
+    try {
+        adcs_.emplace_back("2", "ads1256-current-1");
+    } catch (std::exception &e) {
+        logs::log(ERR, "Exception creating ADC current-1 (CS2)! e: %s\n",
+                  e.what());
+        exit(1);
+    }
+
+    /* ADS1256 #3 (CS 3) — current, differential, 4 pairs */
+    try {
+        adcs_.emplace_back("3", "ads1256-current-2");
+    } catch (std::exception &e) {
+        logs::log(ERR, "Exception creating ADC current-2 (CS3)! e: %s\n",
+                  e.what());
         exit(1);
     }
 }
@@ -92,6 +120,88 @@ int ExperimentManager::runDacChannelSweep(DAC &dac) {
     return retval;
 }
 
+int ExperimentManager::runAdcSample() {
+    if (db_.begin() < 0)
+        return -1;
+
+    int retval = 0;
+
+    /*
+     * ADC #1 (adcs_[0]) — voltage readings, single-ended channels 0-7.
+     * One reading per MOSFET gate channel.
+     */
+    for (int ch = 0; ch < 8; ++ch) {
+        auto val = adcs_[0].readSingleEnded(ch);
+        if (val) {
+            db::MeasurementEntry entry{
+                .sensorName = adcs_[0].label(),
+                .channel = ch,
+                .value = *val,
+                .unix_ms = getUnixMs(),
+            };
+
+            if (db_.addMeasurement(entry) < 0) {
+                logs::log(ERR,
+                          "Failed to add voltage measurement ch[%d] to db!\n",
+                          ch);
+                retval = -1;
+            }
+        } else {
+            logs::log(ERR, "Failed to read voltage on ch[%d]!\n", ch);
+            retval = -1;
+        }
+    }
+
+    /*
+     * ADC #2 and #3 (adcs_[1], adcs_[2]) — current readings, differential
+     * channels: 0-1, 2-3, 4-5, 6-7.
+     *
+     * The channel number stored in the DB is the differential pair index
+     * (0..3) offset by 4 for the second ADC, so we get a contiguous
+     * 0..7 range across both current ADCs.
+     */
+    for (int adcIdx = 1; adcIdx <= 2; ++adcIdx) {
+        int chOffset = (adcIdx - 1) * 4;
+
+        for (int pair = 0; pair < 4; ++pair) {
+            int chPos = pair * 2;
+            int chNeg = pair * 2 + 1;
+
+            auto val = adcs_[adcIdx].readDifferential(chPos, chNeg);
+            if (val) {
+                db::MeasurementEntry entry{
+                    .sensorName = adcs_[adcIdx].label(),
+                    .channel = chOffset + pair,
+                    .value = *val,
+                    .unix_ms = getUnixMs(),
+                };
+
+                if (db_.addMeasurement(entry) < 0) {
+                    logs::log(
+                        ERR,
+                        "Failed to add current measurement ch[%d-%d] to db!\n",
+                        chPos, chNeg);
+                    retval = -1;
+                }
+            } else {
+                logs::log(ERR, "Failed to read current on ch[%d-%d]!\n", chPos,
+                          chNeg);
+                retval = -1;
+            }
+        }
+    }
+
+    if (retval == 0) {
+        logs::log(DEBUG, "Committed ADC sample to DB!\n");
+        db_.commit();
+    } else {
+        logs::log(DEBUG, "Rolled back ADC sample to DB!\n");
+        db_.rollback();
+    }
+
+    return retval;
+}
+
 void ExperimentManager::runExperiment() {
     for (auto &dac : dacs_) {
         dac.setIntReference(DAC81408_REF_ON);
@@ -147,6 +257,8 @@ void ExperimentManager::runExperiment() {
         for (auto &dac : dacs_) {
             runDacChannelSweep(dac);
         }
+
+        runAdcSample();
 
         std::this_thread::sleep_until(next + std::chrono::microseconds(500));
     }

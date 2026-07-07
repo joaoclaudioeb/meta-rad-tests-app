@@ -2,6 +2,7 @@
 #define EXPERIMENT_MANAGER_HPP_
 
 #include <fsatutils/zmq/service.hpp>
+#include <rad-tests-app/adc.hpp>
 #include <rad-tests-app/dac.hpp>
 #include <rad-tests-app/db.hpp>
 #include <vector>
@@ -16,7 +17,10 @@ class ExperimentManager {
 
   private:
     int runDacChannelSweep(DAC &dac);
+    int runAdcSample();
+
     std::vector<DAC> dacs_;
+    std::vector<ADC> adcs_;
     db::SqliteDb db_;
     double step_{0.050};
     double currentSetPoint_{0.0};

@@ -1,5 +1,5 @@
 rta_srcs = files(
-  'adc.cpp',
+  'ads1256.cpp',
   'db.cpp',
   'main.cpp',
   'helpers.cpp',

@@ -13,3 +13,7 @@ clean: meson.build
 .Phony:
 install: meson.build install.sh
 	@sudo ./install.sh
+
+.Phony:
+format:
+	@find src include -name '*.cpp' -o -name '*.hpp' -o -name '*.c' -o -name '*.h' | xargs clang-format -i

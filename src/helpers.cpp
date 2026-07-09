@@ -1,6 +1,5 @@
-#include <rad-tests-app/helpers.hpp>
-
 #include <chrono>
+#include <rad-tests-app/helpers.hpp>
 
 int64_t getUnixMs(void) {
   return std::chrono::duration_cast<std::chrono::milliseconds>(

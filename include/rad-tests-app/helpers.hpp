@@ -5,4 +5,4 @@
 
 int64_t getUnixMs(void);
 
-#endif // HELPERS_H_
+#endif  // HELPERS_H_

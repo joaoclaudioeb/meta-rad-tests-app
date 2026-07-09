@@ -13,7 +13,7 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
   }
 
   try {
-    iio_ctx_ = std::make_shared<fsatutils::iio::Context>();
+    iio_ctx_ = std::make_shared<fsatutils::iio::Context>(fsatutils::iio::ContextType::LOCAL);
   } catch (std::exception& e) {
     logs::log(ERR, "Exception creating IIO context! e: %s\n", e.what());
     exit(1);

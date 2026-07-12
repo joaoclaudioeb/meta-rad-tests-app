@@ -13,7 +13,8 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
   }
 
   try {
-    iio_ctx_ = std::make_shared<fsatutils::iio::Context>(fsatutils::iio::ContextType::LOCAL);
+    iio_ctx_ = std::make_shared<fsatutils::iio::Context>(
+        fsatutils::iio::ContextType::LOCAL);
   } catch (std::exception& e) {
     logs::log(ERR, "Exception creating IIO context! e: %s\n", e.what());
     exit(1);
@@ -76,8 +77,6 @@ int ExperimentManager::runDacChannelSweep(DAC& dac) {
       logs::log(ERR, "Failed to set voltage at channel[%i] on sweep\n", i);
   }
 
-  if (db_.begin() < 0) return -1;
-
   int retval = 0;
   for (int i = 0; i < dacChannels_; ++i) {
     if (!dac.isChannelEnabled(i)) continue;
@@ -97,21 +96,11 @@ int ExperimentManager::runDacChannelSweep(DAC& dac) {
     }
   }
 
-  if (retval == 0) {
-    logs::log(DEBUG, "Commited a channel sweep to DB!\n");
-    db_.commit();
-  } else {
-    logs::log(DEBUG, "Rollbacked a channel sweep to DB!\n");
-    db_.rollback();
-  }
-
   return retval;
 }
 
 int ExperimentManager::runAdcSample() {
   if (adcs_.empty()) return 0;
-
-  if (db_.begin() < 0) return -1;
 
   int retval = 0;
 
@@ -171,14 +160,6 @@ int ExperimentManager::runAdcSample() {
     }
   }
 
-  if (retval == 0) {
-    logs::log(DEBUG, "Committed ADC sample to DB!\n");
-    db_.commit();
-  } else {
-    logs::log(DEBUG, "Rolled back ADC sample to DB!\n");
-    db_.rollback();
-  }
-
   return retval;
 }
 
@@ -231,15 +212,27 @@ void ExperimentManager::runExperiment() {
     dac.setChannelVoltage(7, 0.0);
   }
 
-  while (true) {
-    auto next = std::chrono::steady_clock::now();
+  db_.begin();
 
+  int ret = 0;
+
+  while (true) {
     for (auto& dac : dacs_) {
-      runDacChannelSweep(dac);
+      if (runDacChannelSweep(dac) < 0) ret = -1;
     }
 
-    runAdcSample();
+    if (runAdcSample() < 0) ret = -1;
 
-    std::this_thread::sleep_until(next + std::chrono::microseconds(500));
+    if (currentSetPoint_ <= 0.0) {
+      if (ret == 0) {
+        logs::log(DEBUG, "Committed sweep to DB!\n");
+        db_.commit();
+      } else {
+        logs::log(DEBUG, "Rolled back sweep to DB!\n");
+        db_.rollback();
+      }
+      db_.begin();
+      ret = 0;
+    }
   }
 }

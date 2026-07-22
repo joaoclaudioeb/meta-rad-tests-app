@@ -44,19 +44,19 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
   }
 
   try {
-    adcs_.emplace_back(iio_ctx_, "ads1256");
+    adcs_.emplace_back(iio_ctx_, "iio:device2");
   } catch (std::exception& e) {
     logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
   }
 
   try {
-      adcs_.emplace_back(iio_ctx_, "ads1256");
+      adcs_.emplace_back(iio_ctx_, "aiio:device3");
   } catch (std::exception &e) {
       logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
   }
 
   try {
-      adcs_.emplace_back(iio_ctx_, "ads1256");
+      adcs_.emplace_back(iio_ctx_, "iio:device4");
   } catch (std::exception &e) {
       logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
   }

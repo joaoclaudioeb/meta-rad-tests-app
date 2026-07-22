@@ -22,7 +22,7 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
   gpiod_line_request_output(venableLine_, "rad-tests-app", 0);
   gpiod_line_request_output(pdwnOneLine_, "rad-tests-app", 0);
   gpiod_line_request_output(pdwnTwoLine_, "rad-tests-app", 0);
-  gpiod_line_request_output(vpdwnThreeLine_, "rad-tests-app", 0);
+  gpiod_line_request_output(pdwnThreeLine_, "rad-tests-app", 0);
 
 
   try {

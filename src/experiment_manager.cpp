@@ -12,6 +12,19 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
     exit(1);
   }
 
+  gpioChip_ = gpiod_chip_open_by_label("axi_gpio_ctrl");
+  
+  venableLine_ = gpiod_chip_get_line(gpioChip_, 0);
+  pdwnOneLine_ = gpiod_chip_get_line(gpioChip_, 1);
+  pdwnTwoLine_ = gpiod_chip_get_line(gpioChip_, 4);    
+  pdwnThreeLine_ = gpiod_chip_get_line(gpioChip_, 6);
+  
+  gpiod_line_request_output(venableLine_, "rad-tests-app", 0);
+  gpiod_line_request_output(pdwnOneLine_, "rad-tests-app", 0);
+  gpiod_line_request_output(pdwnTwoLine_, "rad-tests-app", 0);
+  gpiod_line_request_output(vpdwnThreeLine_, "rad-tests-app", 0);
+
+
   try {
     iio_ctx_ = std::make_shared<fsatutils::iio::Context>(
         fsatutils::iio::ContextType::LOCAL);
@@ -26,17 +39,17 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
     logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
   }
 
-  // try {
-  //     adcs_.emplace_back(iio_ctx_, "ads1256");
-  // } catch (std::exception &e) {
-  //     logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
-  // }
+  try {
+      adcs_.emplace_back(iio_ctx_, "ads1256");
+  } catch (std::exception &e) {
+      logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
+  }
 
-  // try {
-  //     adcs_.emplace_back(iio_ctx_, "ads1256");
-  // } catch (std::exception &e) {
-  //     logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
-  // }
+  try {
+      adcs_.emplace_back(iio_ctx_, "ads1256");
+  } catch (std::exception &e) {
+      logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
+  }
 }
 
 std::vector<fsatutils::zmq::Command>
@@ -216,7 +229,13 @@ void ExperimentManager::runExperiment() {
 
   int ret = 0;
 
+  gpiod_line_set_value(pdwnOneLine_, 1);
+  gpiod_line_set_value(pdwnTwoLine_, 1);
+  gpiod_line_set_value(pdwnThreeLine_, 1);
+
   while (true) {
+    /* Relay enabled at the start of the sweep */
+    gpiod_line_set_value(venableLine_, 1);  
     for (auto& dac : dacs_) {
       if (runDacChannelSweep(dac) < 0) ret = -1;
     }
@@ -227,6 +246,8 @@ void ExperimentManager::runExperiment() {
       if (ret == 0) {
         logs::log(DEBUG, "Committed sweep to DB!\n");
         db_.commit();
+        /* Relay disabled at the end of the sweep */
+        gpiod_line_set_value(venableLine_, 0);
       } else {
         logs::log(DEBUG, "Rolled back sweep to DB!\n");
         db_.rollback();

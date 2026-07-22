@@ -7,6 +7,13 @@
 #include <rad-tests-app/dac.hpp>
 #include <rad-tests-app/db.hpp>
 #include <vector>
+#include <gpiod.h>
+
+struct gpiod_chip *gpioChip_;
+struct gpiod_line *venableLine_;
+struct gpiod_line *pdwnOneLine_;
+struct gpiod_line *pdwnTwoLine_;
+struct gpiod_line *pdwnThreeLine_; 
 
 class ExperimentManager {
  public:

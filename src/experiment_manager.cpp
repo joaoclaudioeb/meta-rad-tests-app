@@ -4,6 +4,12 @@
 #include <rad-tests-app/helpers.hpp>
 #include <thread>
 
+struct gpiod_chip* ExperimentManager::gpioChip_ = nullptr;
+struct gpiod_line* ExperimentManager::venableLine_ = nullptr;
+struct gpiod_line* ExperimentManager::pdwnOneLine_ = nullptr;
+struct gpiod_line* ExperimentManager::pdwnTwoLine_ = nullptr;
+struct gpiod_line* ExperimentManager::pdwnThreeLine_ = nullptr;
+
 ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
   try {
     dacs_.emplace_back("/dev/spidev1.0", "gpiochip0", 0U, DAC81408_PIN_UNUSED);

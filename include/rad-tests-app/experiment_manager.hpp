@@ -9,12 +9,6 @@
 #include <vector>
 #include <gpiod.h>
 
-struct gpiod_chip *gpioChip_;
-struct gpiod_line *venableLine_;
-struct gpiod_line *pdwnOneLine_;
-struct gpiod_line *pdwnTwoLine_;
-struct gpiod_line *pdwnThreeLine_; 
-
 class ExperimentManager {
  public:
   ExperimentManager(std::string dbPath);
@@ -37,6 +31,13 @@ class ExperimentManager {
   double maxSetPoint_{5.0};
   int dacChannels_{8};
   bool run_{false};
+
+  static struct gpiod_chip *gpioChip_;
+  static struct gpiod_line *venableLine_;
+  static struct gpiod_line *pdwnOneLine_;
+  static struct gpiod_line *pdwnTwoLine_;
+  static struct gpiod_line *pdwnThreeLine_; 
 };
+
 
 #endif  // EXPERIMENT_MANAGER_HPP_

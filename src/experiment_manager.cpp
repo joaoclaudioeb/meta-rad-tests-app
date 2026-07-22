@@ -43,22 +43,46 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
     exit(1);
   }
 
-  try {
-    adcs_.emplace_back(iio_ctx_, "iio:device2");
-  } catch (std::exception& e) {
-    logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
+  for (int attempt = 0; attempt < 3; ++attempt) {
+      try {
+          adcs_.emplace_back(iio_ctx_, "iio:device2");
+          break;
+      } catch (std::exception &e) {
+          if (attempt == 2) {
+              logs::log(ERR, "Failed to create Ads1256 iio:device2 after retries!\n");
+          } else {
+              logs::log(WARN, "Retrying iio:device2...\n");
+              std::this_thread::sleep_for(std::chrono::seconds(1));
+          }
+      }
   }
 
-  try {
-      adcs_.emplace_back(iio_ctx_, "aiio:device3");
-  } catch (std::exception &e) {
-      logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
+  for (int attempt = 0; attempt < 3; ++attempt) {
+      try {
+          adcs_.emplace_back(iio_ctx_, "iio:device3");
+          break;
+      } catch (std::exception &e) {
+          if (attempt == 2) {
+              logs::log(ERR, "Failed to create Ads1256 iio:device3 after retries!\n");
+          } else {
+              logs::log(WARN, "Retrying iio:device3...\n");
+              std::this_thread::sleep_for(std::chrono::seconds(1));
+          }
+      }
   }
 
-  try {
-      adcs_.emplace_back(iio_ctx_, "iio:device4");
-  } catch (std::exception &e) {
-      logs::log(ERR, "Exception creating Ads1256! e: %s\n", e.what());
+  for (int attempt = 0; attempt < 3; ++attempt) {
+      try {
+          adcs_.emplace_back(iio_ctx_, "iio:device4");
+          break;
+      } catch (std::exception &e) {
+          if (attempt == 2) {
+              logs::log(ERR, "Failed to create Ads1256 iio:device4 after retries!\n");
+          } else {
+              logs::log(WARN, "Retrying iio:device4...\n");
+              std::this_thread::sleep_for(std::chrono::seconds(1));
+          }
+      }
   }
 }
 

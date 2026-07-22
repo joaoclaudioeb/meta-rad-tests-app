@@ -12,13 +12,17 @@ struct gpiod_line* ExperimentManager::pdwnThreeLine_ = nullptr;
 
 ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
   try {
-    dacs_.emplace_back("/dev/spidev1.0", "gpiochip0", 0U, DAC81408_PIN_UNUSED);
+    dacs_.emplace_back("/dev/spidev1.0", "/dev/gpiochip0", 0U, DAC81408_PIN_UNUSED);
   } catch (std::exception& e) {
     logs::log(ERR, "Exception triggered creating DAC! e: %s\n", e.what());
     exit(1);
   }
 
-  gpioChip_ = gpiod_chip_open_by_label("axi_gpio_ctrl");
+  gpioChip_ = gpiod_chip_open("/dev/gpiochip1");
+  if (!gpioChip_) {
+      logs::log(ERR, "Failed to open gpiochip1!\n");
+      exit(1);
+  }
   
   venableLine_ = gpiod_chip_get_line(gpioChip_, 0);
   pdwnOneLine_ = gpiod_chip_get_line(gpioChip_, 1);

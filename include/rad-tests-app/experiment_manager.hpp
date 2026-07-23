@@ -8,6 +8,7 @@
 #include <rad-tests-app/db.hpp>
 #include <vector>
 #include <gpiod.h>
+#include <atomic>
 
 class ExperimentManager {
  public:

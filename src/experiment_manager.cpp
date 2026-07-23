@@ -107,7 +107,7 @@ void ExperimentManager::commandHandler(void* manager, fsatutils::zmq::Command cm
     logs::log(INFO, "Starting run at %llu...\n", getUnixMs());
   } else if (cmd.cmd == "set-interval") {
     man->interval_ = std::stoi(cmd.args[0].value);
-    logs::log(INFO, "Interval between sweeps changed to %d.\n", man->interval_);
+    logs::log(INFO, "Interval between sweeps changed to %d.\n", (int)man->interval_); 
   } else {
     logs::log(WARN, "Invalid command received!\n");
   }

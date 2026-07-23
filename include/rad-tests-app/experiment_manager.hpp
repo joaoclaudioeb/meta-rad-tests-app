@@ -26,11 +26,14 @@ class ExperimentManager {
   std::vector<DAC> dacs_;
   std::vector<Ads1256> adcs_;
   db::SqliteDb db_;
+
   double step_{0.050};
   double currentSetPoint_{0.0};
   double maxSetPoint_{5.0};
   int dacChannels_{8};
-  bool run_{false};
+
+  std::atomic<int> interval_{1800};
+  std::atomic<bool> run_{false};
 
   static struct gpiod_chip *gpioChip_;
   static struct gpiod_line *venableLine_;

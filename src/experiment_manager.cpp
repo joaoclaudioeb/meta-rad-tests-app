@@ -86,21 +86,29 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
   }
 }
 
-std::vector<fsatutils::zmq::Command>
-ExperimentManager::getCommandDescription() {
-  fsatutils::zmq::Command run;
-  run.cmd = "run";
+std::vector<fsatutils::zmq::Command> ExperimentManager::getCommandDescription() {
+    fsatutils::zmq::Command run;
+    run.cmd = "run";
 
-  return {run};
+    fsatutils::zmq::Command stop;
+    stop.cmd = "stop";
+
+    fsatutils::zmq::Command set_interval;
+    set_interval.cmd = "set-interval";
+    set_interval.args = {{"seconds", "int"}};
+
+    return {run, stop, set_interval};
 }
 
-void ExperimentManager::commandHandler(void* manager,
-                                       fsatutils::zmq::Command cmd) {
+void ExperimentManager::commandHandler(void* manager, fsatutils::zmq::Command cmd) {
   ExperimentManager* man = static_cast<ExperimentManager*>(manager);
 
   if (cmd.cmd == "run") {
     man->run_ = true;
     logs::log(INFO, "Starting run at %llu...\n", getUnixMs());
+  } else if (cmd.cmd == "set-interval") {
+    man->interval_ = std::stoi(cmd.args[0].second);
+    logs::log(INFO, "Interval between sweeps changed to %d.\n", man->interval_);
   } else {
     logs::log(WARN, "Invalid command received!\n");
   }
@@ -259,35 +267,46 @@ void ExperimentManager::runExperiment() {
     dac.setChannelVoltage(7, 0.0);
   }
 
-  db_.begin();
-
-  int ret = 0;
-
   gpiod_line_set_value(pdwnOneLine_, 1);
   gpiod_line_set_value(pdwnTwoLine_, 1);
   gpiod_line_set_value(pdwnThreeLine_, 1);
 
-  while (true) {
-    /* Relay enabled at the start of the sweep */
-    gpiod_line_set_value(venableLine_, 1);  
-    for (auto& dac : dacs_) {
-      if (runDacChannelSweep(dac) < 0) ret = -1;
-    }
-
-    if (runAdcSample() < 0) ret = -1;
-
-    if (currentSetPoint_ <= 0.0) {
-      if (ret == 0) {
-        logs::log(DEBUG, "Committed sweep to DB!\n");
-        db_.commit();
-        /* Relay disabled at the end of the sweep */
-        gpiod_line_set_value(venableLine_, 0);
-      } else {
-        logs::log(DEBUG, "Rolled back sweep to DB!\n");
-        db_.rollback();
+  std::jthread timer([this]() {
+      while (true) {
+          std::this_thread::sleep_for(std::chrono::seconds(interval_));
+          run_ = true;
       }
+  });
+  
+  while (true) {
+      if (!run_) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(100));
+          continue;
+      }
+
+      gpiod_line_set_value(venableLine_, 1);
       db_.begin();
-      ret = 0;
-    }
+      int ret = 0;
+
+      while (true) {
+          for (auto& dac : dacs_) {
+              if (runDacChannelSweep(dac) < 0) ret = -1;
+          }
+          if (runAdcSample() < 0) ret = -1;
+
+          if (currentSetPoint_ <= 0.0) {
+              if (ret == 0) {
+                  logs::log(DEBUG, "Committed sweep to DB!\n");
+                  db_.commit();
+              } else {
+                  logs::log(DEBUG, "Rolled back sweep to DB!\n");
+                  db_.rollback();
+              }
+              gpiod_line_set_value(venableLine_, 0);
+              break;
+          }
+      }
+
+      run_ = false;
   }
-}
+} 

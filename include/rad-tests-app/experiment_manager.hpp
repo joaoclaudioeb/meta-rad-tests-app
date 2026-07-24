@@ -1,14 +1,15 @@
 #ifndef EXPERIMENT_MANAGER_HPP_
 #define EXPERIMENT_MANAGER_HPP_
 
+#include <gpiod.h>
+
+#include <atomic>
 #include <fsatutils/iio/context.hpp>
 #include <fsatutils/zmq/service.hpp>
 #include <rad-tests-app/ads1256.hpp>
 #include <rad-tests-app/dac.hpp>
 #include <rad-tests-app/db.hpp>
 #include <vector>
-#include <gpiod.h>
-#include <atomic>
 
 class ExperimentManager {
  public:
@@ -36,12 +37,11 @@ class ExperimentManager {
   std::atomic<int> interval_{1800};
   std::atomic<bool> run_{false};
 
-  static struct gpiod_chip *gpioChip_;
-  static struct gpiod_line *venableLine_;
-  static struct gpiod_line *pdwnOneLine_;
-  static struct gpiod_line *pdwnTwoLine_;
-  static struct gpiod_line *pdwnThreeLine_; 
+  static struct gpiod_chip* gpioChip_;
+  static struct gpiod_line* venableLine_;
+  static struct gpiod_line* pdwnOneLine_;
+  static struct gpiod_line* pdwnTwoLine_;
+  static struct gpiod_line* pdwnThreeLine_;
 };
-
 
 #endif  // EXPERIMENT_MANAGER_HPP_

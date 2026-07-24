@@ -12,7 +12,8 @@ struct gpiod_line* ExperimentManager::pdwnThreeLine_ = nullptr;
 
 ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
   try {
-    dacs_.emplace_back("/dev/spidev1.0", "/dev/gpiochip0", 0U, DAC81408_PIN_UNUSED);
+    dacs_.emplace_back("/dev/spidev1.0", "/dev/gpiochip0", 0U,
+                       DAC81408_PIN_UNUSED);
   } catch (std::exception& e) {
     logs::log(ERR, "Exception triggered creating DAC! e: %s\n", e.what());
     exit(1);
@@ -20,20 +21,19 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
 
   gpioChip_ = gpiod_chip_open("/dev/gpiochip1");
   if (!gpioChip_) {
-      logs::log(ERR, "Failed to open gpiochip1!\n");
-      exit(1);
+    logs::log(ERR, "Failed to open gpiochip1!\n");
+    exit(1);
   }
-  
+
   venableLine_ = gpiod_chip_get_line(gpioChip_, 0);
   pdwnOneLine_ = gpiod_chip_get_line(gpioChip_, 1);
-  pdwnTwoLine_ = gpiod_chip_get_line(gpioChip_, 4);    
+  pdwnTwoLine_ = gpiod_chip_get_line(gpioChip_, 4);
   pdwnThreeLine_ = gpiod_chip_get_line(gpioChip_, 6);
-  
+
   gpiod_line_request_output(venableLine_, "rad-tests-app", 0);
   gpiod_line_request_output(pdwnOneLine_, "rad-tests-app", 0);
   gpiod_line_request_output(pdwnTwoLine_, "rad-tests-app", 0);
   gpiod_line_request_output(pdwnThreeLine_, "rad-tests-app", 0);
-
 
   try {
     iio_ctx_ = std::make_shared<fsatutils::iio::Context>(
@@ -44,62 +44,70 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
   }
 
   for (int attempt = 0; attempt < 3; ++attempt) {
-      try {
-          adcs_.emplace_back(iio_ctx_, "iio:device2");
-          break;
-      } catch (std::exception &e) {
-          if (attempt == 2) {
-              logs::log(ERR, "Failed to create Ads1256 iio:device2 after retries!\n");
-          } else {
-              logs::log(WARN, "Retrying iio:device2...\n");
-              std::this_thread::sleep_for(std::chrono::seconds(1));
-          }
+    try {
+      adcs_.emplace_back(iio_ctx_, "ads1256-voltage");
+      break;
+    } catch (std::exception& e) {
+      if (attempt == 2) {
+        logs::log(ERR, "Failed to create Ads1256 iio:device2 after retries!\n");
+      } else {
+        logs::log(WARN, "Retrying iio:device2...\n");
+        std::this_thread::sleep_for(std::chrono::seconds(1));
       }
+    }
   }
 
   for (int attempt = 0; attempt < 3; ++attempt) {
-      try {
-          adcs_.emplace_back(iio_ctx_, "iio:device3");
-          break;
-      } catch (std::exception &e) {
-          if (attempt == 2) {
-              logs::log(ERR, "Failed to create Ads1256 iio:device3 after retries!\n");
-          } else {
-              logs::log(WARN, "Retrying iio:device3...\n");
-              std::this_thread::sleep_for(std::chrono::seconds(1));
-          }
+    try {
+      adcs_.emplace_back(iio_ctx_, "ads1256-current-1");
+      break;
+    } catch (std::exception& e) {
+      if (attempt == 2) {
+        logs::log(ERR, "Failed to create Ads1256 iio:device3 after retries!\n");
+      } else {
+        logs::log(WARN, "Retrying iio:device3...\n");
+        std::this_thread::sleep_for(std::chrono::seconds(1));
       }
+    }
   }
 
   for (int attempt = 0; attempt < 3; ++attempt) {
-      try {
-          adcs_.emplace_back(iio_ctx_, "iio:device4");
-          break;
-      } catch (std::exception &e) {
-          if (attempt == 2) {
-              logs::log(ERR, "Failed to create Ads1256 iio:device4 after retries!\n");
-          } else {
-              logs::log(WARN, "Retrying iio:device4...\n");
-              std::this_thread::sleep_for(std::chrono::seconds(1));
-          }
+    try {
+      adcs_.emplace_back(iio_ctx_, "ads1256-current-2");
+      break;
+    } catch (std::exception& e) {
+      if (attempt == 2) {
+        logs::log(ERR, "Failed to create Ads1256 iio:device4 after retries!\n");
+      } else {
+        logs::log(WARN, "Retrying iio:device4...\n");
+        std::this_thread::sleep_for(std::chrono::seconds(1));
       }
+    }
   }
 }
 
-std::vector<fsatutils::zmq::Command> ExperimentManager::getCommandDescription() {
-    fsatutils::zmq::Command run;
-    run.cmd = "run";
+std::vector<fsatutils::zmq::Command>
+ExperimentManager::getCommandDescription() {
+  fsatutils::zmq::Command run;
+  run.cmd = "run";
 
-    fsatutils::zmq::Command stop;
-    stop.cmd = "stop";
+  fsatutils::zmq::Command stop;
+  stop.cmd = "stop";
 
-    fsatutils::zmq::Command set_interval;
-    set_interval.cmd = "set-interval";
+  fsatutils::zmq::CommandArg seconds_arg;
+  seconds_arg.name = "seconds";
+  seconds_arg.type = fsatutils::zmq::ArgType::INT32;
+  seconds_arg.optional = false;
 
-    return {run, stop, set_interval};
+  fsatutils::zmq::Command set_interval;
+  set_interval.cmd = "set-interval";
+  set_interval.args = {seconds_arg};
+
+  return {run, stop, set_interval};
 }
 
-void ExperimentManager::commandHandler(void* manager, fsatutils::zmq::Command cmd) {
+void ExperimentManager::commandHandler(void* manager,
+                                       fsatutils::zmq::Command cmd) {
   ExperimentManager* man = static_cast<ExperimentManager*>(manager);
 
   if (cmd.cmd == "run") {
@@ -107,7 +115,8 @@ void ExperimentManager::commandHandler(void* manager, fsatutils::zmq::Command cm
     logs::log(INFO, "Starting run at %llu...\n", getUnixMs());
   } else if (cmd.cmd == "set-interval") {
     man->interval_ = std::stoi(cmd.args[0].value);
-    logs::log(INFO, "Interval between sweeps changed to %d.\n", (int)man->interval_); 
+    logs::log(INFO, "Interval between sweeps changed to %d.\n",
+              (int)man->interval_);
   } else {
     logs::log(WARN, "Invalid command received!\n");
   }
@@ -271,41 +280,41 @@ void ExperimentManager::runExperiment() {
   gpiod_line_set_value(pdwnThreeLine_, 1);
 
   std::jthread timer([this]() {
-      while (true) {
-          std::this_thread::sleep_for(std::chrono::seconds(interval_));
-          run_ = true;
-      }
+    while (true) {
+      std::this_thread::sleep_for(std::chrono::seconds(interval_));
+      run_ = true;
+    }
   });
-  
+
   while (true) {
-      if (!run_) {
-          std::this_thread::sleep_for(std::chrono::milliseconds(100));
-          continue;
+    if (!run_) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      continue;
+    }
+
+    gpiod_line_set_value(venableLine_, 1);
+    db_.begin();
+    int ret = 0;
+
+    while (true) {
+      for (auto& dac : dacs_) {
+        if (runDacChannelSweep(dac) < 0) ret = -1;
       }
+      if (runAdcSample() < 0) ret = -1;
 
-      gpiod_line_set_value(venableLine_, 1);
-      db_.begin();
-      int ret = 0;
-
-      while (true) {
-          for (auto& dac : dacs_) {
-              if (runDacChannelSweep(dac) < 0) ret = -1;
-          }
-          if (runAdcSample() < 0) ret = -1;
-
-          if (currentSetPoint_ <= 0.0) {
-              if (ret == 0) {
-                  logs::log(DEBUG, "Committed sweep to DB!\n");
-                  db_.commit();
-              } else {
-                  logs::log(DEBUG, "Rolled back sweep to DB!\n");
-                  db_.rollback();
-              }
-              gpiod_line_set_value(venableLine_, 0);
-              break;
-          }
+      if (currentSetPoint_ <= 0.0) {
+        if (ret == 0) {
+          logs::log(DEBUG, "Committed sweep to DB!\n");
+          db_.commit();
+        } else {
+          logs::log(DEBUG, "Rolled back sweep to DB!\n");
+          db_.rollback();
+        }
+        gpiod_line_set_value(venableLine_, 0);
+        break;
       }
+    }
 
-      run_ = false;
+    run_ = false;
   }
-} 
+}

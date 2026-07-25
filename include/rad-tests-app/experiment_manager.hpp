@@ -10,6 +10,8 @@
 #include <rad-tests-app/dac.hpp>
 #include <rad-tests-app/db.hpp>
 #include <vector>
+#include <condition_variable>
+#include <mutex>
 
 class ExperimentManager {
  public:

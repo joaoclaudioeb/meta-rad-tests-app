@@ -115,6 +115,7 @@ void ExperimentManager::commandHandler(void* manager,
     logs::log(INFO, "Starting run at %llu...\n", getUnixMs());
   } else if (cmd.cmd == "set-interval") {
     man->interval_ = std::stoi(cmd.args[0].value);
+    man->cv_.notify_one();
     logs::log(INFO, "Interval between sweeps changed to %d.\n",
               (int)man->interval_);
   } else {
@@ -280,10 +281,13 @@ void ExperimentManager::runExperiment() {
   gpiod_line_set_value(pdwnThreeLine_, 1);
 
   std::jthread timer([this]() {
-    while (true) {
-      std::this_thread::sleep_for(std::chrono::seconds(interval_));
-      run_ = true;
-    }
+      while (true) {
+          std::unique_lock<std::mutex> lock(cv_mtx_);
+          auto status = cv_.wait_for(lock, std::chrono::seconds(interval_));
+          if (status == std::cv_status::timeout) {
+              run_ = true;
+          }
+      }
   });
 
   while (true) {

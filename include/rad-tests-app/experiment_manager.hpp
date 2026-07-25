@@ -33,9 +33,11 @@ class ExperimentManager {
   double currentSetPoint_{0.0};
   double maxSetPoint_{5.0};
   int dacChannels_{8};
-
   std::atomic<int> interval_{1800};
   std::atomic<bool> run_{false};
+
+  std::mutex cv_mtx_;
+  std::condition_variable cv_;
 
   static struct gpiod_chip* gpioChip_;
   static struct gpiod_line* venableLine_;

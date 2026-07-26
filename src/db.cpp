@@ -31,7 +31,7 @@ int SqliteDb::createMeasurementsTable(void) {
             timestamp_ms INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_meas_sensor_time
-            ON measurements(sensorName, timestamp);
+            ON measurements(sensorName, timestamp_ms);
     )";
 
   char* errMsg = nullptr;
@@ -60,7 +60,7 @@ int SqliteDb::createActuationTable(void) {
             timestamp_ms INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_meas_sensor_time
-            ON measurements(dacName, timestamp);
+            ON measurements(dacName, timestamp_ms);
     )";
 
   char* errMsg = nullptr;

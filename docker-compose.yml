@@ -1,0 +1,19 @@
+services:
+  grafana-rad-tests:
+    image: grafana/grafana:latest
+    user: "${HOST_UID}:${HOST_GID}"
+    dns:
+      - 8.8.8.8
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - GF_PLUGINS_PREINSTALL=frser-sqlite-datasource,grafana-clock-panel
+    volumes:
+      - ${GRAFANA_MAIN_VOLUME:-./grafana}:/var/lib/grafana:Z
+      - ${DB_VOLUME_PATH:-./db}:/var/lib/grafana/data/:Z
+      # Read-only provisioning
+      - ${GRAFANA_DS_VOLUME:-./grafana/provisioning/datasources}:/etc/grafana/provisioning/datasources:ro,Z
+      - ${GRAFANA_PROV_DASH_VOLUME:-./grafana/provisioning/dashboards}:/etc/grafana/provisioning/dashboards:ro,Z
+      - ${GRAFANA_DASH_VOLUME:-./grafana/dashboards}:/var/lib/grafana/dashboards:ro,Z

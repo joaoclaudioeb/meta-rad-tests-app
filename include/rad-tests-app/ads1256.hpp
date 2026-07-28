@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#define SHUNT_OHMS 0.22
+
 class Ads1256 {
  public:
   Ads1256(std::shared_ptr<fsatutils::iio::Context> ctx, std::string name);

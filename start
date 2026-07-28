@@ -1,0 +1,23 @@
+#!/bin/bash
+set -euo pipefail
+
+usage() {
+    echo "Usage: $0 [grafana|sync]"
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage
+fi
+
+case "$1" in
+    grafana)
+        docker compose up
+        ;;
+    sync)
+        python3 sync.py
+        ;;
+    *)
+        usage
+        ;;
+esac

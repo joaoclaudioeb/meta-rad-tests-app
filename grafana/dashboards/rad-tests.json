@@ -28,9 +28,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
+          "color": { "mode": "palette-classic" },
           "custom": {
             "axisBorderShow": true,
             "axisCenteredZero": false,
@@ -43,31 +41,18 @@
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
             "insertNulls": 3600000,
             "lineInterpolation": "stepAfter",
-            "lineStyle": {
-              "fill": "solid"
-            },
+            "lineStyle": { "fill": "solid" },
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
+            "scaleDistribution": { "type": "linear" },
             "showPoints": "auto",
             "showValues": false,
             "spanNulls": 3600000,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
           },
           "decimals": 3,
           "fieldMinMax": false,
@@ -75,60 +60,30 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 80 }
             ]
           },
           "unit": "volt"
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 11,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
+      "gridPos": { "h": 11, "w": 24, "x": 0, "y": 0 },
       "id": 4,
       "options": {
-        "legend": {
-          "calcs": [
-            "range"
-          ],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
-        },
-        "timezone": [
-          "utc"
-        ],
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
+        "legend": { "calcs": ["range"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "timezone": ["utc"],
+        "tooltip": { "hideZeros": false, "mode": "single", "sort": "none" }
       },
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "PA88B79ECFD5A9C08"
-          },
-          "queryText": "SELECT\n    timestamp_ms / 1000.0                 AS time,\n    '| DAC - Channel ' || channel                  AS series,\n    setPoint                              set_point\nFROM actuation\nWHERE timestamp_ms BETWEEN $__from AND $__to\nORDER BY time ASC;",
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "PA88B79ECFD5A9C08" },
+          "queryText": "SELECT\n    timestamp_ms / 1000.0 AS time,\n    '| DAC - Channel ' || channel AS series,\n    setPoint set_point\nFROM actuation\nWHERE timestamp_ms BETWEEN $__from AND $__to\nORDER BY time ASC;",
           "queryType": "time series",
-          "rawQueryText": "SELECT\n    timestamp_ms / 1000.0                 AS time,\n    '| DAC - Channel ' || channel                  AS series,\n    setPoint                              set_point\nFROM actuation\nWHERE timestamp_ms BETWEEN $__from AND $__to\nORDER BY time ASC;",
+          "rawQueryText": "SELECT\n    timestamp_ms / 1000.0 AS time,\n    '| DAC - Channel ' || channel AS series,\n    setPoint set_point\nFROM actuation\nWHERE timestamp_ms BETWEEN $__from AND $__to\nORDER BY time ASC;",
           "refId": "A",
-          "timeColumns": [
-            "time",
-            "ts"
-          ]
+          "timeColumns": ["time", "ts"]
         }
       ],
       "title": "Actuation",
@@ -141,9 +96,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
+          "color": { "mode": "palette-classic" },
           "custom": {
             "axisBorderShow": true,
             "axisCenteredZero": false,
@@ -156,31 +109,18 @@
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
             "insertNulls": 3600000,
             "lineInterpolation": "stepAfter",
-            "lineStyle": {
-              "fill": "solid"
-            },
+            "lineStyle": { "fill": "solid" },
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
+            "scaleDistribution": { "type": "linear" },
             "showPoints": "auto",
             "showValues": false,
             "spanNulls": 3600000,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
           },
           "decimals": 3,
           "fieldMinMax": false,
@@ -188,72 +128,108 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 80 }
             ]
           },
           "unit": "volt"
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 11,
-        "w": 24,
-        "x": 0,
-        "y": 11
-      },
+      "gridPos": { "h": 11, "w": 24, "x": 0, "y": 11 },
       "id": 5,
       "options": {
-        "legend": {
-          "calcs": [
-            "range"
-          ],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
-        },
-        "timezone": [
-          "utc"
-        ],
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
+        "legend": { "calcs": ["range"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "timezone": ["utc"],
+        "tooltip": { "hideZeros": false, "mode": "single", "sort": "none" }
       },
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "PA88B79ECFD5A9C08"
-          },
-          "queryText": "SELECT\n    timestamp_ms / 1000.0                 AS time,\n    ' | ' || sensorName || ' - Channel ' || channel    AS series,\n    value                              AS meas\nFROM measurements\nWHERE timestamp_ms BETWEEN $__from AND $__to\nORDER BY time ASC;",
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "PA88B79ECFD5A9C08" },
+          "queryText": "SELECT\n    timestamp_ms / 1000.0 AS time,\n    ' | ' || sensorName || ' - Channel ' || channel AS series,\n    value AS meas\nFROM measurements\nWHERE timestamp_ms BETWEEN $__from AND $__to\n  AND sensorName = 'ads1256-voltage'\nORDER BY time ASC;",
           "queryType": "time series",
-          "rawQueryText": "SELECT\n    timestamp_ms / 1000.0                 AS time,\n    ' | ' || sensorName || ' - Channel ' || channel    AS series,\n    value                              AS meas\nFROM measurements\nWHERE timestamp_ms BETWEEN $__from AND $__to\nORDER BY time ASC;",
+          "rawQueryText": "SELECT\n    timestamp_ms / 1000.0 AS time,\n    ' | ' || sensorName || ' - Channel ' || channel AS series,\n    value AS meas\nFROM measurements\nWHERE timestamp_ms BETWEEN $__from AND $__to\n  AND sensorName = 'ads1256-voltage'\nORDER BY time ASC;",
           "refId": "A",
-          "timeColumns": [
-            "time",
-            "ts"
-          ]
+          "timeColumns": ["time", "ts"]
         }
       ],
-      "title": "Measurements",
+      "title": "Voltage Measurements",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "PA88B79ECFD5A9C08"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "left",
+            "barAlignment": -1,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": 3600000,
+            "lineInterpolation": "stepAfter",
+            "lineStyle": { "fill": "solid" },
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 3600000,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "decimals": 3,
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 80 }
+            ]
+          },
+          "unit": "amp"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 11, "w": 24, "x": 0, "y": 22 },
+      "id": 6,
+      "options": {
+        "legend": { "calcs": ["range"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "timezone": ["utc"],
+        "tooltip": { "hideZeros": false, "mode": "single", "sort": "none" }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "PA88B79ECFD5A9C08" },
+          "queryText": "SELECT\n    timestamp_ms / 1000.0 AS time,\n    ' | ' || sensorName || ' - Channel ' || channel AS series,\n    value AS meas\nFROM measurements\nWHERE timestamp_ms BETWEEN $__from AND $__to\n  AND sensorName IN ('ads1256-current-1', 'ads1256-current-2')\nORDER BY time ASC;",
+          "queryType": "time series",
+          "rawQueryText": "SELECT\n    timestamp_ms / 1000.0 AS time,\n    ' | ' || sensorName || ' - Channel ' || channel AS series,\n    value AS meas\nFROM measurements\nWHERE timestamp_ms BETWEEN $__from AND $__to\n  AND sensorName IN ('ads1256-current-1', 'ads1256-current-2')\nORDER BY time ASC;",
+          "refId": "A",
+          "timeColumns": ["time", "ts"]
+        }
+      ],
+      "title": "Current Measurements",
       "type": "timeseries"
     }
   ],
   "preload": false,
   "schemaVersion": 42,
   "tags": [],
-  "templating": {
-    "list": []
-  },
+  "templating": { "list": [] },
   "time": {
     "from": "2026-01-15T23:59:52.308Z",
     "to": "2026-01-16T03:29:19.586Z"

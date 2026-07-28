@@ -60,5 +60,6 @@ std::optional<double> Ads1256::get_differential(int pair) const {
   }
 
   double volts = static_cast<double>(raw) * scale / 1000.0;
-  return volts;
+  double amps = volts / SHUNT_OHMS;
+  return amps;
 }

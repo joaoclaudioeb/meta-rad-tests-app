@@ -126,7 +126,7 @@ void ExperimentManager::commandHandler(void* manager,
 int ExperimentManager::runDacChannelSweep(DAC& dac) {
   std::vector<db::ActuationEntry> dbEntries(dacChannels_);
 
-  currentSetPoint_ += step_;
+  currentSetPoint_ += stepFor(currentSetPoint_);
 
   if (currentSetPoint_ > maxSetPoint_) currentSetPoint_ = 0.0;
 

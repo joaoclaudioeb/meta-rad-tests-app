@@ -24,14 +24,20 @@ class ExperimentManager {
  private:
   int runDacChannelSweep(DAC& dac);
   int runAdcSample();
-
+  double stepFor(double v) const {
+    return (v >= fineStart_ && v < fineEnd_) ? fineStep_ : coarseStep_;
+  }
+  
   std::shared_ptr<fsatutils::iio::Context> iio_ctx_;
 
   std::vector<DAC> dacs_;
   std::vector<Ads1256> adcs_;
   db::SqliteDb db_;
 
-  double step_{0.050};
+  double coarseStep_{0.050};
+  double fineStep_{0.010};
+  double fineStart_{0.60};
+  double fineEnd_{2.10};
   double currentSetPoint_{0.0};
   double maxSetPoint_{5.0};
   int dacChannels_{8};

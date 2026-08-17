@@ -175,9 +175,9 @@ int ExperimentManager::setDacChannelBias(DAC& dac) {
       continue;
     }
 
-    db::ActuationEntry entry{
-        .channel = i,
+    db::ActuationEntry entry{ 
         .dacName = dac.spidev(),
+        .channel = i,
         .setPoint = dacBias_[i],
         .unix_ms = getUnixMs(),
     };

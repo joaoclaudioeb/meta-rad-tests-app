@@ -18,7 +18,7 @@ ExperimentManager::ExperimentManager(std::string dbPath) : db_{dbPath} {
     logs::log(ERR, "Exception triggered creating DAC! e: %s\n", e.what());
     exit(1);
   }
-
+  
   gpioChip_ = gpiod_chip_open("/dev/gpiochip1");
   if (!gpioChip_) {
     logs::log(ERR, "Failed to open gpiochip1!\n");
@@ -163,6 +163,34 @@ int ExperimentManager::runDacChannelSweep(DAC& dac) {
   return retval;
 }
 
+int ExperimentManager::setDacChannelBias(DAC& dac) {
+  int retval = 0;
+
+  for (int i = 0; i < dacChannels_; ++i) {
+    if (!dac.isChannelEnabled(i)) continue;
+
+    if (dac.setChannelVoltage(i, dacBias_[i]) != 0) {
+      logs::log(ERR, "Failed to set voltage at channel[%i]\n", i);
+      retval = -1;
+      continue;
+    }
+
+    db::ActuationEntry entry{
+        .channel = i,
+        .dacName = dac.spidev(),
+        .setPoint = dacBias_[i],
+        .unix_ms = getUnixMs(),
+    };
+
+    if (db_.addActuation(entry) < 0) {
+      logs::log(ERR, "Failed to add actuation for channel[%i] to db!\n", i);
+      retval = -1;
+    }
+  }
+
+  return retval;
+}
+
 int ExperimentManager::runAdcSample() {
   if (adcs_.empty()) return 0;
 
@@ -296,29 +324,63 @@ void ExperimentManager::runExperiment() {
       continue;
     }
 
-    gpiod_line_set_value(venableLine_, 1);
-    db_.begin();
     int ret = 0;
 
-    while (true) {
-      for (auto& dac : dacs_) {
-        if (runDacChannelSweep(dac) < 0) ret = -1;
+    dacBias_ = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    for (int i = 1; i <= retries_; ++i) {
+      ret = 0;
+      for (auto&dac : dacs_) {
+        if (setDacChannelBias(dac) < 0) ret = -1;
       }
-      if (runAdcSample() < 0) ret = -1;
+      if (ret == 0) break;
+      logs::log(WARN, "Failed to set initial state for sweep (%d/%d)\n", i, retries_);
+    }
+    
+    if (ret == 0) {
+      logs::log(DEBUG, "All done! Starting the sweep!\n");
+    } else {
+      logs::log(ERR, "Aborting sweep: could not set initial state\n");
+      run_ = false;
+      continue;
+    }
+    
+    gpiod_line_set_value(venableLine_, 1);
+    for (int i = 1; i <= retries_; i++) {
+      ret = 0;
+      db_.begin();
 
-      if (currentSetPoint_ <= 0.0) {
-        if (ret == 0) {
-          logs::log(DEBUG, "Committed sweep to DB!\n");
-          db_.commit();
-        } else {
-          logs::log(DEBUG, "Rolled back sweep to DB!\n");
-          db_.rollback();
+      /* First measurement, with every channel at 0.0V */
+      if (runAdcSample() < 0) ret = -1;
+      
+      while (true) {
+        for (auto& dac : dacs_) {
+          if (runDacChannelSweep(dac) < 0) ret = -1;
         }
-        gpiod_line_set_value(venableLine_, 0);
+        if (runAdcSample() < 0) ret = -1;
+        if (currentSetPoint_ <= 0.0) break;
+      }
+      
+      if (ret == 0) {
+        logs::log(DEBUG, "Committed sweep to DB!\n");
+        db_.commit();
         break;
       }
+      logs::log(DEBUG, "Rolled back sweep to DB (%d/%d)\n", i, retries_);
+      db_.rollback();
     }
+    gpiod_line_set_value(venableLine_, 0);
 
+    /* Making the bias for the exposure of DUTs */
+    dacBias_ = {5.0, 5.0, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0};
+    for (int i = 0; i <= retries_; ++i) {
+      ret = 0;
+      for (auto&dac : dacs_) {
+        if (setDacChannelBias(dac) < 0) ret = -1;
+      }
+      if (ret == 0) break;
+      logs::log(WARN, "Failed to set the bias for exposure (%d/%d)\n", i, retries_);
+    }
+    
     run_ = false;
-  }
+  } 
 }

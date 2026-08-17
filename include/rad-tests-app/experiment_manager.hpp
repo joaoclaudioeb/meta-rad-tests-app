@@ -23,6 +23,7 @@ class ExperimentManager {
 
  private:
   int runDacChannelSweep(DAC& dac);
+  int setDacChannelBias(DAC& dac);
   int runAdcSample();
   double stepFor(double v) const {
     return (v >= fineStart_ && v < fineEnd_) ? fineStep_ : coarseStep_;
@@ -40,7 +41,10 @@ class ExperimentManager {
   double fineEnd_{2.10};
   double currentSetPoint_{0.0};
   double maxSetPoint_{5.0};
+  int retries_{3};
   int dacChannels_{8};
+  std::vector<double> dacBias_{0.0, 0.0, 0.0, 0.0,
+                               0.0, 0.0, 0.0, 0.0};
   std::atomic<int> interval_{1800};
   std::atomic<bool> run_{false};
 

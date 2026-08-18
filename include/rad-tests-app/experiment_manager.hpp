@@ -37,8 +37,8 @@ class ExperimentManager {
 
   double coarseStep_{0.050};
   double fineStep_{0.010};
-  double fineStart_{0.60};
-  double fineEnd_{2.10};
+  double fineStart_{0.30};
+  double fineEnd_{3.30};
   double currentSetPoint_{0.0};
   double maxSetPoint_{5.0};
   int retries_{3};

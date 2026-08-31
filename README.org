@@ -1,0 +1,246 @@
+#+HTML: <div align="center">
+
+* rad-tests-app
+
+#+HTML:   <img alt="status" src="https://img.shields.io/badge/status-in_development-red.svg"></a>
+#+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/releases"><img alt="release" src="https://img.shields.io/github/v/release/joaoclaudioeb/meta-rad-tests-app.svg"></a>
+#+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/commits/master"><img alt="last_commit" src="https://img.shields.io/github/last-commit/joaoclaudioeb/meta-rad-tests-app.svg"></a>
+#+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/issues"><img alt="issues" src="https://img.shields.io/github/issues/joaoclaudioeb/meta-rad-tests-app.svg"></a>
+#+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/pulls"><img alt="pull_requests" src="https://img.shields.io/github/issues-pr/joaoclaudioeb/meta-rad-tests-app.svg"></a>
+#+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/graphs/contributors"><img alt="contributors" src="https://img.shields.io/github/contributors/joaoclaudioeb/meta-rad-tests-app.svg"></br>
+
+An application for characterizing MOSFETs under ionizing radiation
+
+[[#overview][Overview]] • [[#repository-organization][Repository Organization]] • [[#hardware][Hardware]] • [[#building][Building]] • [[#running][Running]] • [[#visualization][Visualization]] • [[#database][Database]] • [[#license][License]] • [[#releases][Releases]] • [[#notes][Notes]] • [[#references][References]]
+
+#+HTML: </div>
+
+
+* Overview
+:PROPERTIES:
+:CUSTOM_ID: overview
+:END:
+
+This application performs Total Ionizing Dose (TID) characterization of MOSFETs on a Zynq-based platform running a Yocto image. A DAC81408 sweeps the gate voltage of up to 8 devices while three ADS1256 24-bit ADCs read back the gate voltages and the drain currents, the latter through shunt resistors. Every acquisition is stored in a local SQLite database, which can be mirrored to a workstation and visualized in Grafana.
+
+The sweep runs periodically (configurable at runtime) or on demand, and a relay isolates the drain bus from the external supply whenever no sweep is in progress.
+
+
+* Repository Organization
+:PROPERTIES:
+:CUSTOM_ID: repository-organization
+:END:
+
+#+begin_src text
+  meta-rad-tests-app/
+    ├── README.org
+    ├── include/rad-tests-app/
+    ├── src/
+    ├── subprojects/libdac81408/
+    ├── services/
+    ├── scripts/
+    ├── grafana/
+    ├── docker-compose.yml
+    ├── sync.py
+    └── start
+#+end_src
+
+- =include/rad-tests-app/=, =src/= :: Application sources. =experiment_manager= holds the sweep logic and the ZMQ command handlers; =dac=, =ads1256= and =db= wrap the peripherals and the database.
+- =subprojects/libdac81408/= :: Userspace driver for the DAC81408, over =spidev=.
+- =services/= :: The systemd unit installed on the target.
+- =grafana/= :: Dashboard and provisioning files for the visualization stack.
+- =sync.py=, =docker-compose.yml=, =start= :: Workstation-side tooling (see [[#visualization][Visualization]]).
+
+
+* Hardware
+:PROPERTIES:
+:CUSTOM_ID: hardware
+:END:
+
+All devices share SPI bus 1. The DAC is driven from userspace through =spidev=, while the ADCs use an out-of-tree IIO kernel driver.
+
+| Chip select | Device    | IIO label           | PGA | Data rate |
+|-------------+-----------+---------------------+-----+-----------|
+| CS0         | DAC81408  | =/dev/spidev1.0=    | --  | --        |
+| CS1         | ADS1256   | =ads1256-voltage=   |   1 | 1000 SPS  |
+| CS2         | ADS1256   | =ads1256-current-1= |  64 | 60 SPS    |
+| CS3         | ADS1256   | =ads1256-current-2= |  64 | 60 SPS    |
+
+The ADCs are resolved by their device tree =label=, not by their =iio:deviceN= index, since enumeration order is not guaranteed.
+
+Discrete lines live on =/dev/gpiochip1= (the AXI GPIO in the PL):
+
+| Line | Signal   | Function                          |
+|------+----------+-----------------------------------|
+|    0 | VENABLE  | Relay: connects the drain bus     |
+|    1 | PDWN2    | Power-down, =ads1256-voltage=     |
+|    4 | PDWN3    | Power-down, =ads1256-current-1=   |
+|    6 | PDWN4    | Power-down, =ads1256-current-2=   |
+
+Drain currents are sensed across shunt resistors; the value is defined by =SHUNT_OHMS= in =src/ads1256.cpp= and must match the populated resistors on the interface board.
+
+
+* Building
+:PROPERTIES:
+:CUSTOM_ID: building
+:END:
+
+The application is built as part of the Yocto image. Which recipe to clean depends on what was changed:
+
+| Changed                       | Clean this          |
+|-------------------------------+---------------------|
+| Application sources           | =rad-tests-app=     |
+| ADS1256 kernel driver         | =ads1256=           |
+| Device tree overlay (=.dts=)  | =rad-tests-overlays=|
+
+#+begin_src shell
+  bitbake -c cleanall <recipe> && bitbake rad-tests-image
+#+end_src
+
+Several recipes can be cleaned in the same command. The kernel itself does not need to be rebuilt: both the ADS1256 driver and the overlay are produced by their own recipes.
+
+For a host build during development, =make= runs Meson directly.
+
+
+* Running
+:PROPERTIES:
+:CUSTOM_ID: running
+:END:
+
+The application ships as a systemd service and starts on boot. During development it is usually stopped and launched by hand so its output stays on the console.
+
+Load the firmware, set the clock and start the application:
+
+#+begin_src shell
+  pl-firmwarectl load-project rad-tests-bitstream
+  pl-firmwarectl load-overlay rad-tests-board.dtbo
+
+  date -s "YYYY-MM-DD HH:MM:SS"
+
+  systemctl stop rad-tests-app && rad-tests-app &
+#+end_src
+
+Setting the clock is mandatory: the board has no battery-backed RTC and comes up in 2022 after every boot. Since every record is timestamped, skipping this step makes the data impossible to line up with anything else.
+
+Commands are sent over ZMQ:
+
+#+begin_src shell
+  fsatctl command run -s rad-tests-app
+  fsatctl command set-interval -s rad-tests-app -a seconds:600
+#+end_src
+
+- =run= :: Triggers one sweep immediately.
+- =set-interval= :: Changes the period between automatic sweeps and restarts the countdown right away.
+
+The periodic timer and =run= are independent: sending =run= does not reschedule the timer.
+
+Sweep parameters are compile-time, in =include/rad-tests-app/experiment_manager.hpp=:
+
+| Parameter                     | Default | Meaning                                |
+|-------------------------------+---------+----------------------------------------|
+| =coarseStep_= / =fineStep_=   | 50 / 10 mV | Gate voltage increment                 |
+| =fineStart_= / =fineEnd_=     | 0.30 / 3.30 V | Range that uses the fine step       |
+| =maxSetPoint_=                | 5.0 V   | End of the sweep                       |
+| =interval_=                   | 1800 s  | Initial period between sweeps          |
+| =retries_=                    | 3       | Attempts before aborting a sweep       |
+| =dacBias_=                    | all 0 V | Gate bias applied between sweeps       |
+
+The fine window must contain the transition region for the whole campaign. Under TID the threshold voltage drifts negative, so leave headroom below the pre-irradiation transition.
+
+
+* Visualization
+:PROPERTIES:
+:CUSTOM_ID: visualization
+:END:
+
+The database lives on the target, and Grafana runs on the workstation. A sync script copies the databases over; Grafana reads the local copies.
+
+Do *not* mount =/experiment= over =sshfs= and point Grafana at it. SQLite in WAL mode relies on shared memory that does not survive a network filesystem, and the application stops being able to write.
+
+Three terminals:
+
+#+begin_src shell
+  # 1. target
+  systemctl stop rad-tests-app && rad-tests-app &
+
+  # 2. workstation, mirrors the databases every 15 s
+  ./start sync
+
+  # 3. workstation, brings Grafana up
+  ./start grafana
+#+end_src
+
+Then open =http://localhost:3000= (=admin= / =admin=).
+
+=sync.py= runs =.backup= on the target before copying, which yields a consistent snapshot without disturbing the writer, and then =rsync= transfers only what changed. It mirrors both =rad-tests-app.sqlite3= and =read-sensors.sqlite3=, the latter feeding the temperature panel.
+
+The dashboard has four panels: DAC set points, gate voltages, drain currents and temperature.
+
+
+* Database
+:PROPERTIES:
+:CUSTOM_ID: database
+:END:
+
+=/experiment/rad-tests-app.sqlite3=, two tables:
+
+#+begin_src sql
+  actuation(id, dacName, channel, setPoint, timestamp_ms)
+  measurements(id, sensorName, channel, value, timestamp_ms)
+#+end_src
+
+Each sweep is written inside a single transaction, committed only if every step succeeded. This is what keeps the sweep at roughly 30 ms per iteration instead of 180 ms.
+
+*Units in* =measurements.value= *depend on* =sensorName=:
+
+| =sensorName=        | Channels | Unit    |
+|---------------------+----------+---------|
+| =ads1256-voltage=   | 0--7     | Volts   |
+| =ads1256-current-1= | 0--3     | Amperes |
+| =ads1256-current-2= | 4--7     | Amperes |
+
+Currents are already divided by =SHUNT_OHMS= before being stored, so no further conversion is needed.
+
+Temperature and humidity come from a separate service, in =/experiment/read-sensors.sqlite3=. Note that it timestamps with a TEXT =CURRENT_TIMESTAMP= rather than epoch milliseconds, hence the =strftime= in the Grafana query.
+
+
+* License
+:PROPERTIES:
+:CUSTOM_ID: license
+:END:
+
+This project is open-source under the following license: GNU General Public License v2.0.
+
+
+* Releases
+:PROPERTIES:
+:CUSTOM_ID: releases
+:END:
+
+Releases are published after the application has been validated against the interface board on the bench. Please refer to the *documentation* for more details.
+
+
+* Notes
+:PROPERTIES:
+:CUSTOM_ID: notes
+:END:
+
+Recurring issues and how to get past them:
+
+- *SSH host key changed* :: Expected after reflashing the target. Run =ssh-keygen -R 192.168.99.1=.
+- *Connection timed out* :: The USB Ethernet profile did not come up. Check =nmcli connection show=; if =rad-tests-platform= is inactive, bring it up with =nmcli connection up rad-tests-platform=. Binding the profile to the target MAC rather than to an interface name keeps it working across USB ports.
+- *Timestamps in 2022* :: The clock was not set after boot. See [[#running][Running]].
+- *No data in Grafana* :: Check the dashboard time range first, then whether =./start sync= is running.
+- *Sweep never starts* :: =run= only fires one sweep; the periodic timer is separate and starts counting from =interval_=.
+
+
+* References
+:PROPERTIES:
+:CUSTOM_ID: references
+:END:
+
+# - <<ref1>> [1] A. C. Vilas Bôas et al., "Ionizing radiation hardness tests of GaN HEMTs for harsh environments," in /Microelectronics Reliability/, vol. 116, 114000, 2021, available at [[https://doi.org/10.1016/j.microrel.2020.114000][this link]].
+
+# - <<ref2>> [2] A. C. Vilas Bôas et al., "Reliability analysis of gamma- and X-ray TID effects on a commercial AlGaN/GaN based FET," in /Journal of Integrated Circuits and Systems/, vol. 16, no. 3, 2021, available at [[https://doi.org/10.29292/jics.v16i3.566][this link]].
+
+# - <<ref3>> [3] D. Cheney et al., "A Comprehensive Approach to HEMT Reliability Testing," in /MRS Proceedings/, vol. 1195, 2010.

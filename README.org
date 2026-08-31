@@ -2,12 +2,12 @@
 
 * rad-tests-app
 
-#+HTML:   <img alt="status" src="https://img.shields.io/badge/status-in_development-red.svg"></a>
+#+HTML:   <img alt="status" src="https://img.shields.io/badge/status-in_development-red.svg">
 #+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/releases"><img alt="release" src="https://img.shields.io/github/v/release/joaoclaudioeb/meta-rad-tests-app.svg"></a>
 #+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/commits/master"><img alt="last_commit" src="https://img.shields.io/github/last-commit/joaoclaudioeb/meta-rad-tests-app.svg"></a>
 #+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/issues"><img alt="issues" src="https://img.shields.io/github/issues/joaoclaudioeb/meta-rad-tests-app.svg"></a>
 #+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/pulls"><img alt="pull_requests" src="https://img.shields.io/github/issues-pr/joaoclaudioeb/meta-rad-tests-app.svg"></a>
-#+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/graphs/contributors"><img alt="contributors" src="https://img.shields.io/github/contributors/joaoclaudioeb/meta-rad-tests-app.svg"></br>
+#+HTML:   <a href="https://github.com/joaoclaudioeb/meta-rad-tests-app/graphs/contributors"><img alt="contributors" src="https://img.shields.io/github/contributors/joaoclaudioeb/meta-rad-tests-app.svg"></a>
 
 An application for characterizing MOSFETs under ionizing radiation
 

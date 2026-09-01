@@ -371,7 +371,7 @@ void ExperimentManager::runExperiment() {
     gpiod_line_set_value(venableLine_, 0);
 
     /* Making the bias for the exposure of DUTs */
-    dacBias_ = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    dacBias_ = {5.0, 5.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0};
     for (int i = 0; i <= retries_; ++i) {
       ret = 0;
       for (auto&dac : dacs_) {
